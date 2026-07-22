@@ -1,7 +1,6 @@
 from pathlib import Path
-
 from cnnClassifier.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH
-from cnnClassifier.entity.config_entity import (DataIngestionConfig, PrepareBaseModelConfig, TrainingConfig)
+from cnnClassifier.entity.config_entity import (DataIngestionConfig, PrepareBaseModelConfig, TrainingConfig, EvaluationConfig)
 from cnnClassifier.utils.common import create_directories, read_yaml
 
 
@@ -54,8 +53,11 @@ class ConfigurationManager:
         training = self.config.training
         prepare_base_model = self.config.prepare_base_model
         params = self.params
-        training_data = os.path.join(self.config.data_ingestion.unzip_dir, "Chest-CT-Scan-data")
-        create_directories(Path[training.root_dir])
+        training_data = Path(self.config.data_ingestion.unzip_dir) / "Chest-CT-Scan-data"
+        nested_training_data = training_data / "Chest-CT-Scan-data"
+        if nested_training_data.exists():
+            training_data = nested_training_data
+        create_directories([training.root_dir])
         
         training_config = TrainingConfig(
             root_dir=Path(training.root_dir),
@@ -67,18 +69,20 @@ class ConfigurationManager:
             params_is_augmentation=params.AUGMENTATION,
             params_image_size=params.IMAGE_SIZE
         )
-
-
-
-
-
-
-
-
-
-
-
-
+        
+        return training_config
+    
+    
+    def get_evaluation_config(self) -> EvaluationConfig:
+        eval_config = EvaluationConfig(
+            path_of_model="artifacts/training/model.h5",
+            tarining_data="artifacts/data_ingestion/Chest-CT-Scan-data",
+            mlflow_url="https://dagshub.com/sahil6098/Chest-Disease-Classification-using-Deep-Learning.mlflow",
+            all_params=self.params,
+            params_image_size=self.params.IMAGE_SIZE,
+            params_batch_size=self.params.BATCH_SIZE
+        )
+        return eval_config
 
 
 
