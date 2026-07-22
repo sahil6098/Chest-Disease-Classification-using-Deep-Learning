@@ -44,7 +44,7 @@ class Evaluation:
     
     def evaluation(self):
         self.model = self.load_model(self.config.path_of_model)
-        self._valid_generator()
+        self.valid_generator()
         self.score = self.model.evaluate(self.valid_generator)
         
     def save_score(self):
@@ -58,7 +58,7 @@ class Evaluation:
         
         with mlflow.start_run():
             mlflow.log_params(self.config.all_params)
-            mlflow.log_metric({"loss": self.score[0], "accuracy": self.score[1]})
+            mlflow.log_metrics({"loss": self.score[0], "accuracy": self.score[1]})
             
             if tracking_url_type_store != "file":
                 mlflow.keras.log_model(self.model, "model", registered_model_name="CNNClassifierModel")
