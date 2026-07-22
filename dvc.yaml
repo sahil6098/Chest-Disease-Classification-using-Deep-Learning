@@ -10,7 +10,7 @@ stages:
 
 
   prepare_base_model:
-    cmd: "python src/cnnClassifier/pipeline/stage_02_prepare_base_model.py
+    cmd: "python src/cnnClassifier/pipeline/stage_02_prepare_base_model.py"
     deps:
       - src/cnnClassifier/pipeline/stage_02_prepare_base_model.py
       - config/config.yaml
@@ -22,3 +22,32 @@ stages:
       - LEARNING_RATE
     outs:
       - artifacts/prepare_base_model
+
+  training:
+    cmd: "python src/cnnClassifier/pipeline/stage_03_model_trainer.py"
+    deps:
+      - src/cnnClassifier/pipeline/stage_03_model_trainer.py
+      - config/config.yaml
+      - artifacts/data_ingestion/Chest-CT-Scan-data
+      - artifacts/prepare_base_model
+    params:
+      - IMAGE_SIZE
+      - BATCH_SIZE
+      - EPOCHS
+      - AUGMENTATION
+    outs:
+      - artifacts/training/model.h5
+
+  evaluation:
+    cmd: "python src/cnnClassifier/pipeline/stage_04_evaluation.py"
+    deps:
+      - src/cnnClassifier/pipeline/stage_04_evaluation.py
+      - config/config.yaml
+      - artifacts/data_ingestion/Chest-CT-Scan-data
+      - artifacts/training/model.h5
+    params:
+      - IMAGE_SIZE
+      - BATCH_SIZE
+    metrics:
+    - scores.json:
+        cache: false

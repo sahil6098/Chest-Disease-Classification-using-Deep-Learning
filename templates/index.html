@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chest Disease Classification</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6fbfc;
+      --surface: #ffffff;
+      --surface-soft: #eef8f7;
+      --ink: #13252b;
+      --muted: #60737a;
+      --line: #d8e7ea;
+      --primary: #087f8c;
+      --primary-dark: #075e6c;
+      --accent: #2fbf71;
+      --warning: #d87032;
+      --danger: #c9445a;
+      --shadow: 0 18px 45px rgba(29, 64, 74, 0.11);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #f8fdfe 0%, var(--bg) 58%, #eef7f4 100%);
+      color: var(--ink);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px clamp(18px, 4vw, 48px);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #e4f7f3;
+      border: 1px solid #c4e9e6;
+      color: var(--primary);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      line-height: 1.15;
+      font-weight: 760;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.3;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #cbe8de;
+      border-radius: 999px;
+      background: #f2fbf7;
+      color: #28634b;
+      white-space: nowrap;
+      font-size: 0.88rem;
+      font-weight: 650;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(47, 191, 113, 0.13);
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 48px) 0 44px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+      gap: clamp(18px, 3vw, 28px);
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 22px 22px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--primary-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.18;
+    }
+
+    h2 {
+      font-size: clamp(1.45rem, 3vw, 2.45rem);
+      max-width: 720px;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+    }
+
+    .subcopy {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 64ch;
+    }
+
+    .scan-asset {
+      width: 154px;
+      aspect-ratio: 1;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      background: #f0fbfd;
+      border: 1px solid #cfeaed;
+      overflow: hidden;
+    }
+
+    .panel-body {
+      padding: 22px;
+    }
+
+    .upload-zone {
+      position: relative;
+      min-height: 345px;
+      border: 1.5px dashed #a9cfd4;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fbfeff 0%, #eff9f8 100%);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+    }
+
+    .upload-zone.is-dragging {
+      border-color: var(--primary);
+      background: #eaf8f5;
+      transform: translateY(-1px);
+    }
+
+    .upload-empty {
+      display: grid;
+      place-items: center;
+      gap: 16px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .upload-icon {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--primary);
+      border: 1px solid #d6ecef;
+      box-shadow: 0 10px 28px rgba(8, 127, 140, 0.12);
+    }
+
+    .upload-empty strong {
+      display: block;
+      font-size: 1.18rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-empty span {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .preview-wrap {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: #f8fcfc;
+    }
+
+    .preview-wrap.has-image {
+      display: block;
+    }
+
+    .preview-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 18px;
+    }
+
+    .preview-meta {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(216, 231, 234, 0.96);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 44px;
+      padding: 11px 16px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 750;
+      transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, border-color 150ms ease;
+    }
+
+    .btn:focus-visible,
+    .file-control:focus-visible {
+      outline: 3px solid rgba(8, 127, 140, 0.24);
+      outline-offset: 2px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--primary);
+      box-shadow: 0 12px 24px rgba(8, 127, 140, 0.22);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      color: var(--primary-dark);
+      background: #ffffff;
+      border-color: #bfdde2;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      background: #f3fbfb;
+    }
+
+    .btn-danger {
+      color: var(--danger);
+      background: #fff5f6;
+      border-color: #f1c7ce;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .file-control {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .result-panel {
+      min-height: 300px;
+      display: grid;
+      align-content: start;
+    }
+
+    .result-banner {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 8px;
+      border: 1px solid #d7e8ec;
+      background: #f8fcfd;
+      min-height: 120px;
+      display: grid;
+      align-content: center;
+      gap: 10px;
+    }
+
+    .result-label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    .result-value {
+      font-size: clamp(1.8rem, 5vw, 2.7rem);
+      font-weight: 820;
+      line-height: 1;
+      color: var(--primary-dark);
+      overflow-wrap: anywhere;
+    }
+
+    .result-banner.healthy {
+      border-color: #bfe4cb;
+      background: #f1fbf5;
+    }
+
+    .result-banner.alert {
+      border-color: #f0c8b0;
+      background: #fff8f3;
+    }
+
+    .result-banner.alert .result-value {
+      color: var(--warning);
+    }
+
+    .clinical-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfefe;
+      min-height: 84px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.35;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.02rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .message {
+      margin-top: 14px;
+      min-height: 22px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .message.error {
+      color: var(--danger);
+      font-weight: 650;
+    }
+
+    .message.success {
+      color: #24754e;
+      font-weight: 650;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 18px 0;
+    }
+
+    .train-copy {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 10px 0 0;
+    }
+
+    .spinner {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.46);
+      border-top-color: #ffffff;
+      animation: spin 850ms linear infinite;
+      display: none;
+    }
+
+    .btn.loading .spinner {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 880px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-header {
+        flex-direction: column;
+      }
+
+      .scan-asset {
+        width: 100%;
+        max-height: 150px;
+        aspect-ratio: 5 / 2;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .status-pill {
+        white-space: normal;
+      }
+
+      .panel-header,
+      .panel-body {
+        padding: 18px;
+      }
+
+      .upload-zone {
+        min-height: 286px;
+      }
+
+      .actions,
+      .preview-meta {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Chest Disease Classification">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" role="img">
+            <path d="M12 4v16M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M7.5 6.5c-1.4 1.7-2.1 3.9-2.1 6.8v3.1c0 .7.6 1.2 1.3 1.1 2.8-.5 4.3-2.8 4.3-6.9V8.4c0-1.7-2.3-3.2-3.5-1.9ZM16.5 6.5c1.4 1.7 2.1 3.9 2.1 6.8v3.1c0 .7-.6 1.2-1.3 1.1-2.8-.5-4.3-2.8-4.3-6.9V8.4c0-1.7 2.3-3.2 3.5-1.9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div>
+          <h1>Chest Disease Classification</h1>
+          <span>AI image screening dashboard</span>
+        </div>
+      </div>
+      <div class="status-pill"><span class="status-dot"></span> FastAPI service ready</div>
+    </header>
+
+    <main>
+      <section class="workspace" aria-label="Prediction workspace">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Image Study</p>
+              <h2>Clinical image assessment</h2>
+              <p class="subcopy">Select a study image and run the existing deep learning classifier.</p>
+            </div>
+            <div class="scan-asset" aria-hidden="true">
+              <svg viewBox="0 0 220 220" width="100%" height="100%" fill="none">
+                <rect width="220" height="220" fill="#f0fbfd" />
+                <path d="M0 54h220M0 110h220M0 166h220M54 0v220M110 0v220M166 0v220" stroke="#d7ecef" stroke-width="1" />
+                <path d="M109 42v130" stroke="#0a6f78" stroke-width="5" stroke-linecap="round" />
+                <path d="M93 71c-19 16-30 41-30 73v16c0 9 8 15 16 12 26-8 38-30 38-68V82c0-14-13-20-24-11ZM127 71c19 16 30 41 30 73v16c0 9-8 15-16 12-26-8-38-30-38-68V82c0-14 13-20 24-11Z" fill="#dff6f4" stroke="#087f8c" stroke-width="5" stroke-linejoin="round" />
+                <path d="M79 149c12-2 22-14 24-34M141 149c-12-2-22-14-24-34" stroke="#2fbf71" stroke-width="4" stroke-linecap="round" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <input class="file-control" type="file" id="imageInput" accept="image/png,image/jpeg,image/jpg" />
+            <label class="upload-zone" id="dropZone" for="imageInput">
+              <div class="upload-empty" id="uploadEmpty">
+                <div class="upload-icon" aria-hidden="true">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M5 15v2.5A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <strong>Browse image</strong>
+                  <span>JPG or PNG study image</span>
+                </div>
+              </div>
+              <div class="preview-wrap" id="previewWrap">
+                <img id="previewImage" alt="Selected study preview" />
+                <div class="preview-meta">
+                  <span id="fileName">No file selected</span>
+                  <span id="fileSize">0 KB</span>
+                </div>
+              </div>
+            </label>
+
+            <div class="actions">
+              <button class="btn btn-primary" id="predictBtn" type="button" disabled>
+                <span class="spinner" aria-hidden="true"></span>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Run Analysis
+              </button>
+              <button class="btn btn-secondary" id="changeBtn" type="button">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Choose File
+              </button>
+              <button class="btn btn-danger" id="clearBtn" type="button" disabled>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Clear
+              </button>
+            </div>
+            <div class="message" id="message" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <aside class="side-stack">
+          <section class="panel result-panel">
+            <div class="panel-body">
+              <p class="eyebrow">Prediction</p>
+              <h3>Model Output</h3>
+              <div class="result-banner" id="resultBanner">
+                <span class="result-label">Classification</span>
+                <span class="result-value" id="resultValue">Pending</span>
+              </div>
+              <div class="clinical-grid">
+                <div class="metric">
+                  <span>Input</span>
+                  <strong id="inputMetric">Awaiting image</strong>
+                </div>
+                <div class="metric">
+                  <span>Status</span>
+                  <strong id="statusMetric">Ready</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-body">
+              <p class="eyebrow">Pipeline</p>
+              <h3>Training Control</h3>
+              <p class="train-copy">Runs the configured DVC pipeline.</p>
+              <div class="divider"></div>
+              <button class="btn btn-secondary" id="trainBtn" type="button">
+                <span class="spinner" aria-hidden="true"></span>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M20 9a8 8 0 0 0-14.7-3M4 15a8 8 0 0 0 14.7 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Train Model
+              </button>
+              <div class="message" id="trainMessage" role="status" aria-live="polite"></div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById("imageInput");
+    const dropZone = document.getElementById("dropZone");
+    const previewWrap = document.getElementById("previewWrap");
+    const previewImage = document.getElementById("previewImage");
+    const fileName = document.getElementById("fileName");
+    const fileSize = document.getElementById("fileSize");
+    const predictBtn = document.getElementById("predictBtn");
+    const changeBtn = document.getElementById("changeBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const message = document.getElementById("message");
+    const resultBanner = document.getElementById("resultBanner");
+    const resultValue = document.getElementById("resultValue");
+    const inputMetric = document.getElementById("inputMetric");
+    const statusMetric = document.getElementById("statusMetric");
+    const trainBtn = document.getElementById("trainBtn");
+    const trainMessage = document.getElementById("trainMessage");
+
+    let selectedImage = "";
+
+    function formatSize(bytes) {
+      if (!bytes) return "0 KB";
+      const kb = bytes / 1024;
+      return kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${Math.ceil(kb)} KB`;
+    }
+
+    function setMessage(target, text, type = "") {
+      target.textContent = text;
+      target.className = `message ${type}`.trim();
+    }
+
+    function setLoading(button, isLoading) {
+      button.disabled = isLoading || (button === predictBtn && !selectedImage);
+      button.classList.toggle("loading", isLoading);
+    }
+
+    function resetResult() {
+      resultValue.textContent = "Pending";
+      resultBanner.className = "result-banner";
+      statusMetric.textContent = "Ready";
+    }
+
+    function clearImage() {
+      selectedImage = "";
+      imageInput.value = "";
+      previewImage.removeAttribute("src");
+      previewWrap.classList.remove("has-image");
+      fileName.textContent = "No file selected";
+      fileSize.textContent = "0 KB";
+      inputMetric.textContent = "Awaiting image";
+      predictBtn.disabled = true;
+      clearBtn.disabled = true;
+      resetResult();
+      setMessage(message, "");
+    }
+
+    function loadFile(file) {
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        setMessage(message, "Please select an image file.", "error");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        selectedImage = String(reader.result);
+        previewImage.src = selectedImage;
+        previewWrap.classList.add("has-image");
+        fileName.textContent = file.name;
+        fileSize.textContent = formatSize(file.size);
+        inputMetric.textContent = file.name;
+        predictBtn.disabled = false;
+        clearBtn.disabled = false;
+        resetResult();
+        setMessage(message, "Image ready for analysis.", "success");
+      };
+      reader.onerror = () => setMessage(message, "Unable to read the selected image.", "error");
+      reader.readAsDataURL(file);
+    }
+
+    imageInput.addEventListener("change", (event) => loadFile(event.target.files[0]));
+    changeBtn.addEventListener("click", () => imageInput.click());
+    clearBtn.addEventListener("click", clearImage);
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("is-dragging");
+      });
+    });
+
+    dropZone.addEventListener("drop", (event) => loadFile(event.dataTransfer.files[0]));
+
+    predictBtn.addEventListener("click", async () => {
+      if (!selectedImage) return;
+      setLoading(predictBtn, true);
+      statusMetric.textContent = "Analyzing";
+      setMessage(message, "Running prediction...");
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: selectedImage.split(",").pop() })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Prediction request failed.");
+        }
+
+        const prediction = Array.isArray(data) && data[0] ? data[0].image : "Unknown";
+        resultValue.textContent = prediction;
+        resultBanner.className = `result-banner ${prediction.toLowerCase() === "healthy" ? "healthy" : "alert"}`;
+        statusMetric.textContent = "Complete";
+        setMessage(message, "Prediction completed.", "success");
+      } catch (error) {
+        statusMetric.textContent = "Error";
+        setMessage(message, error.message, "error");
+      } finally {
+        setLoading(predictBtn, false);
+      }
+    });
+
+    trainBtn.addEventListener("click", async () => {
+      setLoading(trainBtn, true);
+      setMessage(trainMessage, "Training started...");
+
+      try {
+        const response = await fetch("/train", { method: "POST" });
+        const text = await response.text();
+        if (!response.ok) {
+          let detail = text;
+          try { detail = JSON.parse(text).detail || detail; } catch (ignored) {}
+          throw new Error(detail || "Training failed.");
+        }
+        setMessage(trainMessage, text, "success");
+      } catch (error) {
+        setMessage(trainMessage, error.message, "error");
+      } finally {
+        setLoading(trainBtn, false);
+      }
+    });
+  </script>
+</body>
+</html>
